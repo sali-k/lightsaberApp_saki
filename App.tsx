@@ -6,31 +6,22 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Platform,
-  StatusBar as RNStatusBar, //ExpoのStatusBarと名前がかぶるのでリネーム
+  StatusBar as RNStatusBar,
 } from "react-native";
-// サウンド再生のモジュールをimport
 import { Audio } from "expo-av";
-// ファイルをアセットとして読み込むモジュールをimport
 import { Asset } from "expo-asset";
-// 加速度検出のモジュールをimport
 import { Accelerometer, ThreeAxisMeasurement } from "expo-sensors";
 
-// androidのステータスバーの高さを取る
-// iosだとcurrentHeightがnullになる
 const statusBarHeight = Platform.OS === "ios" ? 0 : RNStatusBar.currentHeight;
 
 export default function App() {
-  // ジェダイになる ⇔ 戻る の切り替えのstate
   const [isRunning, setIsRunning] = useState(false);
-  // 準備状態のstate
   const [isReady, setIsReady] = useState(false);
-  // サウンドを保存するstate
   const [sound1, setSound1] = useState<Audio.Sound>();
   const [sound2, setSound2] = useState<Audio.Sound>();
 
   const initializeAsync = async () => {
     try {
-      // サウンドを読み込む
       const newSound1 = new Audio.Sound();
       const sound1Asset = Asset.fromModule(
         require("./assets/light_saber1.mp3")
@@ -44,51 +35,36 @@ export default function App() {
       );
       await newSound2.loadAsync(sound2Asset);
       setSound2(newSound2);
-
-      // 加速度センサーの読み取り間隔を設定する
       Accelerometer.setUpdateInterval(accInterval);
-
-      // 準備完了
       setIsReady(true);
     } catch (error) {
       alert(error);
     }
   };
 
-  // 画面表示時に実行する
-  // 第2引数に空の配列を指定すると最初に1回だけ実行される。
   useEffect(() => {
     initializeAsync();
   }, []);
 
-  // ボタンの処理にサウンド再生を追加
   const onPressButton = () => {
     setIsRunning(!isRunning);
 
-    // 起動の時にサウンド1を再生
     if (!isRunning) {
       sound1?.replayAsync();
-      // 加速度検出を有効にする
       Accelerometer.addListener(updateLightsaber);
     } else {
-      // 加速度検出を無効にする
       Accelerometer.removeAllListeners();
     }
   };
 
-  const accInterval = 100; //センサーの読み取り間隔(ms)
-  const borderSpeed = 8; //スピードがこれを超えたら音を鳴らす
-  // センサーを読み取ったときに行う処理
+  const accInterval = 100;
+  const borderSpeed = 8;
   const updateLightsaber = (accData: ThreeAxisMeasurement) => {
-    // 各角度への合計速度を取得
     const x = accData.x;
     const y = accData.y;
     const z = accData.z;
-
-    // 検出した値をすべてプラスにして合計する
     const synthetic = x * x + y * y + z * z;
 
-    // 一定以上の速度になったら音を鳴らす
     if (synthetic >= borderSpeed) {
       sound2?.replayAsync();
     }
@@ -98,7 +74,6 @@ export default function App() {
     return (
       <TouchableOpacity style={styles.button} onPress={onPressButton}>
         <Text style={styles.buttonText}>
-          {/* ture=戻る false=ジェダイになる  falseが初期値なのでこう書いているが、!付けずに?で false=戻るで作っても良い*/}
           {!isRunning ? "ジェダイになる" : "戻る"}
         </Text>
       </TouchableOpacity>
@@ -108,7 +83,6 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <JediButton />
-      {/* 背景が黒いのでステータスバーを明るくする */}
       <StatusBar style="light" />
     </SafeAreaView>
   );
